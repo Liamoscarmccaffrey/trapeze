@@ -88,6 +88,22 @@ function setStatus(message, kind, progress = 0) {
   ui.launchProgressBar.style.width = `${Math.max(0, Math.min(progress, 1)) * 100}%`;
 }
 
+async function fetchApiKey() {
+  const response = await fetch('/api/bp-key');
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch API key (${response.status})`);
+  }
+
+  const { apiKey } = await response.json();
+
+  if (!apiKey) {
+    throw new Error('API key missing from /api/bp-key response');
+  }
+
+  return apiKey;
+}
+
 async function launchStudio() {
   if (studioStarted) {
     setStatus('Studio is already running in this tab.', 'live', 1);
@@ -99,7 +115,8 @@ async function launchStudio() {
   setStatus('Booting BrowserPod and preparing the PDF studio…', 'booting', 0.2);
 
   try {
-    pod = await BrowserPod.boot({ apiKey: import.meta.env.VITE_BP_APIKEY });
+    const apiKey = await fetchApiKey();
+    pod = await BrowserPod.boot({ apiKey });
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const terminal = await pod.createDefaultTerminal(ui.console);
